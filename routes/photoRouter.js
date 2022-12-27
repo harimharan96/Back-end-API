@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Photo = require("../models/photoModel");
+const Album = require("../models/albumModel");
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -81,9 +82,23 @@ router.post("/", async (req, res) => {
     name: req.body.name,
     imageUrl: req.body.imageUrl,
   });
+  let date = new Date();
   try {
     const newPhoto = await photo.save();
-    res.status(201).json(newPhoto);
+    // console.log(Date.now());
+    Album.findByIdAndUpdate(
+      req.body.albumId,
+      {
+        lastUpdatedDate: date.toISOString(),
+      },
+      (err, data) => {
+        if (!err) {
+          res.status(201).json(data);
+        } else {
+          console.log(err);
+        }
+      }
+    );
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -91,8 +106,12 @@ router.post("/", async (req, res) => {
 
 // remove album
 router.delete("/:id", getPhoto, async (req, res) => {
+  let date = new Date();
   try {
     await res.photo.remove();
+    Album.findByIdAndUpdate(req.body.albumId, {
+      lastUpdatedDate: date.toISOString(),
+    });
     res.json({ message: "Photo removed" });
   } catch (err) {
     res.status(500).json({ message: err.message });
